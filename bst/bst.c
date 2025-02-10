@@ -1,10 +1,11 @@
 #include "bst.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
 struct bst {
-    void **data;
+    int data;
     struct bst *left;
     struct bst *right;
 };
@@ -13,37 +14,10 @@ void error(char *msg) {
     fprintf(stderr, msg);
 }
 
-
-BST *bst_init(void) {
-    BST *bst = malloc(sizeof(BST));
-    if (!bst) {
-        error("Failed to initialize the bst.\n");
-        return NULL;
-    }
-
-    bst->data = malloc(sizeof(void *));
-    if (!bst->data) {
-        error("Failed to allocate memory for the data.\n");
-        return NULL;
-    }
-
-    bst->left = NULL;
-    bst->right = NULL;
-
-    return bst;
-}
-
-
-BST *bst_make_node(void **data) {
+BST *bst_make_node(int data) {
     BST *node = malloc(sizeof(BST));
     if (!node) {
         error("Failed to create node.\n");
-        return NULL;
-    }
-
-    node->data = malloc(sizeof(void *));
-    if (!node->data) {
-        error("Failed to allocate memory for the data.\n");
         return NULL;
     }
 
@@ -54,66 +28,59 @@ BST *bst_make_node(void **data) {
     return node;
 }
 
-BST *run_insert(BST *root, void **data, int *(compare)(void **p1, void **p2)) {
+BST *bst_init(int data) {
+    return bst_make_node(data);
+}
+
+BST *run_insert(BST *root, int data) {
     if (!root) return bst_make_node(data);
 
-    if (compare(root->data, data) < 0) 
-        return run_insert(root->right, data, compare);
-    if (compare(root->data, data) > 0) 
-        return run_insert(root->left, data, compare);
+    if (data < root->data)
+        root->left = run_insert(root->left, data);
+    if (data > root->data) 
+        root->right = run_insert(root->right, data);
 
-    // already exists ig
     return root;
 }
 
 
-BST *bst_insert(BST *bst, void **data, int *(compare)(void **p1, void **p2)) {
-    if (!data) {
-        error('Invalid arguments for bst_insert().\n');
-        return NULL;
-    }
-
+BST *bst_insert(BST *bst, int data) {
     if (!bst) return bst_make_node(data);
     
-    return run_insert(bst, data, compare);
+    return run_insert(bst, data);
 }
 
 
-BST *run_search(BST *root, void **data, int *(compare)(void **p1, void **p2)) {
+BST *run_search(BST *root, int data) {
     if (!root) return NULL;
     
-    if (compare(root->data, data) == 0) return root;
+    if (data == root->data) return root;
 
-    if (compare(root->data, data) < 0) 
-        return run_search(root->right, data, compare);
-    if (compare(root->data, data) > 0) 
-        return run_search(root->left, data, compare);
+    if (data < root->data) 
+        return run_search(root->left, data);
+    if (data > root->data) 
+        return run_search(root->right, data);
 
-    return NULL;
+    // not found
+    return NULL; 
 }
 
-
-int func(void **p1, void **p2) {
-    int n1 = **(int **)p1;
-    int n2 = **(int **)p2;
-
-    if (n1 == n2) return 0;
-    else if (n1 < n2) return -1;
-    else if (n1 > n2) return 1;
-
-    return 0;
-}
-
-BST *bst_search(BST *bst, void **data/*, int *(compare)(void **p1, void **p2)*/) {
-    if (!data) {
-        error("Invalid data to search.\n");
-        return NULL;
-    }
-
-    int *compare = func;
-    BST *target = run_search(bst, data, compare);
-    if (!target)
-        error("Data not found.\n");
+BST *bst_search(BST *bst, int data) {
+    BST *target = run_search(bst, data);
 
     return target;
+}
+
+void run_inorder(BST *root) {
+    if (!root) return;
+
+    run_inorder(root->left);
+    printf("-%d-", root->data);
+    run_inorder(root->right);
+
+    return;
+}
+
+void bst_inorder(BST *bst) {
+    run_inorder(bst);
 }
