@@ -5,7 +5,7 @@
 
 
 struct vec {
-    void **data; // array of void * things
+    int *data;
     long cap;
     long size;
 };
@@ -18,7 +18,7 @@ void error(char *msg) {
 int extend_vector(vector *v) {
     v->cap *= 2;
 
-    v->data = realloc(v->data, v->cap * sizeof(void *));
+    v->data = realloc(v->data, v->cap * sizeof(int));
     if (!v->data) return 0;
 
     return 1;
@@ -38,7 +38,7 @@ vector *vec_init(long cap) {
     v->cap = cap;
     v->size = 0;
     
-    v->data = malloc(v->cap *sizeof(void *));
+    v->data = malloc(v->cap *sizeof(int));
     if (!v->data) {
         free(v); 
         return NULL;
@@ -47,8 +47,8 @@ vector *vec_init(long cap) {
     return v;
 }
 
-int vec_push(vector *vec, void *data) {
-    if (!vec || !data) {
+int vec_push(vector *vec, int data) {
+    if (!vec) {
         error("Invalid arguments for vec_push().\n");
         return -1;
     }
@@ -64,31 +64,33 @@ int vec_push(vector *vec, void *data) {
     return 0;
 }
 
-void *vec_pop(vector *vec) {
+
+// how do i handle errors here
+int vec_pop(vector *vec) {
 
     if (!vec) {
         error("Invalid argument for vec_push().\n");
-        return NULL;
+        return 1;
     }
 
     if (vec->size <= 0) {
         error("No items to pop.\n");
-        return NULL;
+        return 1;
     }
 
     return vec->data[--vec->size];
 }
 
-void *vec_at(vector *vec, long idx) {
+int vec_at(vector *vec, long idx) {
 
     if (!vec) {
         error("Invalid arguments for vec_at.\n");
-        return NULL;
+        return 1;
     }
 
     if (idx < 0 || idx >= vec->size) {
         error("Index out of bounds.\n");
-        return NULL;
+        return 1;
     }
 
     return vec->data[idx];
@@ -104,8 +106,6 @@ size_t vec_size(vector *vec) {
 }
 
 void vec_free(vector *vec) {
-    for (int i = 0; i < vec->size; i++)
-        free(vec->data[i]);
     free(vec->data);
     free(vec);
 }
