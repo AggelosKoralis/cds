@@ -5,8 +5,8 @@
 // == 0 on equal
 // < 0 on a < b
 // > 0 on a > b
-int compare(int *a, int *b) {
-    return *a - *b;
+int compare(void *a, void *b) {
+    return *(int *)a - *(int *)b;
 }
 
 int main() {
