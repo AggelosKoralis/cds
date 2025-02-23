@@ -2,12 +2,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <stdint.h>
 
 struct vec {
-    int *data;
-    long cap;
-    long size;
+    datatype *data;
+    uint64_t cap;
+    uint64_t size;
+    int (*compare)(void *a, void *b);
 };
 
 void error(char *msg) {
@@ -18,27 +19,25 @@ void error(char *msg) {
 int extend_vector(vector v) {
     v->cap *= 2;
 
-    v->data = realloc(v->data, v->cap * sizeof(int));
+    v->data = realloc(v->data, v->cap * sizeof(datatype));
     if (!v->data) return 0;
 
     return 1;
 }
 
 
-vector vec_init(long cap) {
+vector vec_init(uint64_t cap, compare_func func) {
 
-    if (cap < 0) {
-        error("Tried to initialize vector with negative capacity.\n");
-        return NULL;
-    }
+    if (cap < 0 || !func) return NULL;
 
     vector v = malloc(sizeof(struct vec));
     if (!v) return NULL;
 
     v->cap = cap;
     v->size = 0;
-    
-    v->data = malloc(v->cap * sizeof(int));
+    v->compare = func;
+
+    v->data = malloc(v->cap * sizeof(datatype));
     if (!v->data) {
         free(v); 
         return NULL;
@@ -47,7 +46,7 @@ vector vec_init(long cap) {
     return v;
 }
 
-int vec_push(vector vec, int data) {
+int vec_push(vector vec, datatype data) {
     if (!vec) {
         error("Invalid arguments for vec_push().\n");
         return -1;
@@ -65,38 +64,37 @@ int vec_push(vector vec, int data) {
 }
 
 
-// how do i handle errors here
-int vec_pop(vector vec) {
+datatype vec_pop(vector vec) {
 
     if (!vec) {
         error("Invalid argument for vec_push().\n");
-        return 1;
+        return NULL;
     }
 
     if (vec->size <= 0) {
         error("No items to pop.\n");
-        return 1;
+        return NULL;
     }
 
     return vec->data[--vec->size];
 }
 
-int vec_at(vector vec, long idx) {
+datatype vec_at(vector vec, uint64_t index) {
 
     if (!vec) {
         error("Invalid arguments for vec_at.\n");
-        return 1;
+        return NULL;
     }
 
-    if (idx < 0 || idx >= vec->size) {
+    if (index < 0 || index >= vec->size) {
         error("Index out of bounds.\n");
-        return 1;
+        return NULL;
     }
 
-    return vec->data[idx];
+    return vec->data[index];
 }
 
-size_t vec_size(vector vec) {
+uint64_t vec_size(vector vec) {
     if (!vec) {
         error("Invalid argument for vec_size().\n");
         return 0;
@@ -105,20 +103,20 @@ size_t vec_size(vector vec) {
     return vec->size;
 }
 
-void swap(int *a, int *b) {
-    int c = *a;
+void swap(datatype *a, datatype *b) {
+    datatype c = *a;
     *a = *b;
     *b = c;
 }
 
-long partition(vector vec, long low, long high) {
-    int pivot = vec->data[high];
+uint64_t partition(vector vec, uint64_t low, uint64_t high) {
+    datatype pivot = vec->data[high];
     // pivot index when the partition is done
-    long piv_idx = low;
+    uint64_t piv_idx = low;
 
-    for (long j = low; j <= high - 1; j++) {
-        if (vec->data[j] <= pivot) {
-            swap(&vec->data[j], &vec->data[piv_idx]);
+    for (uint64_t i = low; i <= high - 1; i++) {
+        if (vec->compare(vec->data[i], pivot) <= 0) {
+            swap(&vec->data[i], &vec->data[piv_idx]);
             piv_idx += 1;
         }
     }
@@ -128,14 +126,14 @@ long partition(vector vec, long low, long high) {
 }
 
 
-void vec_sort(vector vec, long low, long high) {
+void vec_sort(vector vec, uint64_t low, uint64_t high) {
     if (!vec) return;
     if (!vec->data) return;
     if (vec->size == 0) return;
     if (low < 0 || high >= vec->size || low >= high) return;
+    if (!vec->compare) return;
 
-
-    long p = partition(vec, low, high);
+    uint64_t p = partition(vec, low, high);
 
     vec_sort(vec, low, p - 1);
     vec_sort(vec, p + 1, high);
@@ -143,6 +141,9 @@ void vec_sort(vector vec, long low, long high) {
 
 
 void vec_free(vector vec) {
+    for (uint64_t i = 0; i <= vec->size; i++)
+        free(vec->data[i]);
+
     free(vec->data); 
     free(vec);
 }
